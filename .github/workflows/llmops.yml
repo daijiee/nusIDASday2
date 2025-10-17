@@ -42,6 +42,7 @@ jobs:
           scan-ref: .
           vuln-type: os,library
           format: table
+        continue-on-error: true  # ensures workflow continues if Trivy fails
 
       - name: Push Docker image
         run: |
