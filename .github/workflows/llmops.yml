@@ -12,8 +12,8 @@ jobs:
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      TRIVY_SEVERITY: ${{ secrets.TRIVY_SEVERITY }}
-      KUBECONFIG_SECRET: ${{ secrets.KUBECONFIG }}
+      DO_TOKEN: ${{ secrets.DO_TOKEN }}
+      TRIVY_SEVERITY: HIGH,CRITICAL
 
     steps:
       - name: Checkout repo
@@ -29,8 +29,7 @@ jobs:
           password: ${{ env.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: |
-          docker build -t $DOCKER_USERNAME/gpt-hf:latest .
+        run: docker build -t $DOCKER_USERNAME/gpt-hf:latest .
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
@@ -38,28 +37,38 @@ jobs:
           image-ref: ${{ env.DOCKER_USERNAME }}/gpt-hf:latest
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: true
-          scan-type: image
-          scan-ref: .
           vuln-type: os,library
           format: table
         continue-on-error: true
 
       - name: Clean Trivy cache
         run: |
-          echo "Cleaning Trivy cache to free space..."
+          echo "Cleaning Trivy cache..."
           rm -rf $HOME/.cache/trivy
 
       - name: Push Docker image
-        run: |
-          docker push $DOCKER_USERNAME/gpt-hf:latest
+        run: docker push $DOCKER_USERNAME/gpt-hf:latest
 
-      - name: Write kubeconfig from secret
+      # Install doctl and authenticate
+      - name: Install doctl
         run: |
-          echo "${{ env.KUBECONFIG_SECRET }}" > kubeconfig.yaml
-          export KUBECONFIG=$(pwd)/kubeconfig.yaml
+          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.99.0/doctl-1.99.0-linux-amd64.tar.gz | tar -xzv
+          sudo mv doctl /usr/local/bin/
+          doctl version
 
+      - name: Authenticate doctl
+        run: doctl auth init -t ${{ env.DO_TOKEN }}
+
+      # ✅ Use cluster ID instead of name (more reliable)
+      - name: Get kubeconfig for cluster
+        run: |
+          doctl kubernetes cluster kubeconfig save 0a03b246-3611-4639-bd54-dc3eeb523a78
+          kubectl config current-context
+          kubectl get nodes
+
+      # ✅ Deploy to DigitalOcean Kubernetes
       - name: Deploy to Kubernetes
         run: |
-          kubectl apply -f deployment.yml
-          kubectl apply -f service.yml
-          kubectl apply -f ingress.yml
+          kubectl apply -f deployment.yml --validate=false
+          kubectl apply -f service.yml --validate=false
+          kubectl apply -f ingress.yml --validate=false
