@@ -12,7 +12,7 @@ jobs:
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      KUBECONFIG: ${{ secrets.KUBECONFIG }}
+      DO_TOKEN : ${{ secrets.DO_TOKEN }}
       TRIVY_SEVERITY: ${{ secrets.TRIVY_SEVERITY }}
 
     steps:
@@ -32,7 +32,7 @@ jobs:
         run: |
           docker build -t $DOCKER_USERNAME/gpt-hf:latest .
 
-      - name: Scan image with Trivy (optional, continue on failure)
+      - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: $DOCKER_USERNAME/gpt-hf:latest
@@ -42,7 +42,7 @@ jobs:
           scan-ref: .
           vuln-type: os,library
           format: table
-        continue-on-error: true  # ensures workflow continues if Trivy fails
+        continue-on-error: true
 
       - name: Clean Trivy cache
         run: |
@@ -59,9 +59,14 @@ jobs:
           sudo mv doctl /usr/local/bin/
           doctl version
 
+      - name: Authenticate doctl
+        run: doctl auth init -t ${{ env.DO_TOKEN }}
+
+      - name: Get kubeconfig
+        run: doctl kubernetes cluster kubeconfig save my-cluster
+
       - name: Deploy to Kubernetes
         run: |
-          export KUBECONFIG=$(pwd)/k8s/kubeconfig.yaml
           kubectl apply -f deployment.yml
           kubectl apply -f service.yml
           kubectl apply -f ingress.yml
