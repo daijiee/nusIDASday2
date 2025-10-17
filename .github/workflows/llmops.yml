@@ -38,7 +38,6 @@ jobs:
           image-ref: ${{ env.DOCKER_USERNAME }}/gpt-hf:latest
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: true
-          scan-type: vuln
         continue-on-error: true
 
       - name: Push Docker image
