@@ -32,17 +32,27 @@ jobs:
         run: |
           docker build -t $DOCKER_USERNAME/gpt-hf:latest .
 
-      - name: Scan image with Trivy
+      - name: Scan image with Trivy (optional, continue on failure)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_USERNAME }}/gpt-hf:latest
+          image-ref: $DOCKER_USERNAME/gpt-hf:latest
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: true
-        continue-on-error: true
+          scan-type: image
+          scan-ref: .
+          vuln-type: os,library
+          format: table
+          continue-on-error: true  # ensures workflow continues if Trivy fails
 
       - name: Push Docker image
         run: |
           docker push $DOCKER_USERNAME/gpt-hf:latest
+
+      - name: Install doctl
+        run: |
+          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.99.0/doctl-1.99.0-linux-amd64.tar.gz | tar -xzv
+          sudo mv doctl /usr/local/bin/
+          doctl version
 
       - name: Deploy to Kubernetes
         run: |
