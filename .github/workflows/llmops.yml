@@ -12,7 +12,7 @@ jobs:
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      DO_TOKEN : ${{ secrets.DO_TOKEN }}
+      DO_TOKEN: ${{ secrets.DO_TOKEN }}
       TRIVY_SEVERITY: ${{ secrets.TRIVY_SEVERITY }}
 
     steps:
@@ -35,7 +35,7 @@ jobs:
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: $DOCKER_USERNAME/gpt-hf:latest
+          image-ref: ${{ env.DOCKER_USERNAME }}/gpt-hf:latest
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: true
           scan-type: image
@@ -48,7 +48,7 @@ jobs:
         run: |
           echo "Cleaning Trivy cache to free space..."
           rm -rf $HOME/.cache/trivy
-          
+
       - name: Push Docker image
         run: |
           docker push $DOCKER_USERNAME/gpt-hf:latest
