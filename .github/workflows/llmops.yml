@@ -71,4 +71,3 @@ jobs:
         run: |
           kubectl apply -f deployment.yml --validate=false
           kubectl apply -f service.yml --validate=false
-          kubectl apply -f ingress.yml --validate=false
