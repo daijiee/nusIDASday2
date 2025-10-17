@@ -44,6 +44,11 @@ jobs:
           format: table
         continue-on-error: true  # ensures workflow continues if Trivy fails
 
+      - name: Clean Trivy cache
+        run: |
+          echo "Cleaning Trivy cache to free space..."
+          rm -rf $HOME/.cache/trivy
+          
       - name: Push Docker image
         run: |
           docker push $DOCKER_USERNAME/gpt-hf:latest
