@@ -12,8 +12,8 @@ jobs:
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DO_TOKEN: ${{ secrets.DO_TOKEN }}
       TRIVY_SEVERITY: ${{ secrets.TRIVY_SEVERITY }}
-      KUBECONFIG_SECRET: ${{ secrets.KUBECONFIG }}
 
     steps:
       - name: Checkout repo
@@ -53,10 +53,17 @@ jobs:
         run: |
           docker push $DOCKER_USERNAME/gpt-hf:latest
 
-      - name: Write kubeconfig from secret
+      - name: Install doctl
         run: |
-          echo "${{ env.KUBECONFIG_SECRET }}" > kubeconfig.yaml
-          export KUBECONFIG=$(pwd)/kubeconfig.yaml
+          curl -sL https://github.com/digitalocean/doctl/releases/download/v1.99.0/doctl-1.99.0-linux-amd64.tar.gz | tar -xzv
+          sudo mv doctl /usr/local/bin/
+          doctl version
+
+      - name: Authenticate doctl
+        run: doctl auth init -t ${{ secrets.DO_TOKEN }}
+
+      - name: Get kubeconfig
+        run: doctl kubernetes cluster kubeconfig save my-cluster
 
       - name: Deploy to Kubernetes
         run: |
