@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gpt-hf-service
+spec:
+  type: ClusterIP  # Changed from NodePort
+  selector:
+    app: gpt-hf-pod
+  ports:
+  - port: 8000
+    targetPort: 8000
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gpt-hf-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: gpt.178.128.135.190.sslip.io  # Replace with your Ingress EXTERNAL-IP
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gpt-hf-service
+            port:
+              number: 8000
